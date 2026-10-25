@@ -151,10 +151,11 @@ pub fn decode_snorm_block_f32(block: &[u8; 8]) -> [f32; 16] {
 /// BC4 unsigned to RGBA8 texels `(R, 0, 0, 255)` (DFS 19.1: "the resulting RGBA value for the texel
 /// is (R, 0, 0, 1)").
 pub fn decode_bc4_block(block: &[u8; 8]) -> [[u8; 4]; 16] {
-    let r = decode_unorm_block(block);
+    let pal = unorm_palette(block[0], block[1]);
+    let bits = index_bits(block);
     let mut out = [[0, 0, 0, 255]; 16];
-    for (px, &v) in out.iter_mut().zip(r.iter()) {
-        px[0] = v;
+    for (i, px) in out.iter_mut().enumerate() {
+        px[0] = pal[code(bits, i)];
     }
     out
 }
@@ -172,12 +173,12 @@ pub fn decode_bc4_snorm_block(block: &[u8; 8]) -> [[u8; 4]; 16] {
 /// BC5 unsigned to RGBA8 texels `(R, G, 0, 255)` (DFS 19.3).
 pub fn decode_bc5_block(block: &[u8; 16]) -> [[u8; 4]; 16] {
     let (r, g) = split(block);
-    let r = decode_unorm_block(r);
-    let g = decode_unorm_block(g);
+    let (pr, pg) = (unorm_palette(r[0], r[1]), unorm_palette(g[0], g[1]));
+    let (br, bg) = (index_bits(r), index_bits(g));
     let mut out = [[0, 0, 0, 255]; 16];
-    for i in 0..16 {
-        out[i][0] = r[i];
-        out[i][1] = g[i];
+    for (i, px) in out.iter_mut().enumerate() {
+        px[0] = pr[code(br, i)];
+        px[1] = pg[code(bg, i)];
     }
     out
 }

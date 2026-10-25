@@ -227,7 +227,9 @@ fn wt(dir: &Path, sink: &mut Sink, limit: usize) -> anyhow::Result<()> {
 fn wf_list(dir: &Path, family: &str, format: &str, count: usize) -> anyhow::Result<()> {
     use wf_unpack::cache::Package;
     use wf_unpack::texture::{Format, TextureHeader, KIND_ARRAY, KIND_CUBEMAP, KIND_PROBE};
+    // "odd" lists block-compressed textures whose width or height is not a multiple of 4
     let want = match format {
+        "odd" => Format::Bgra8,
         "bc1" => Format::Bc1,
         "bc2" => Format::Bc2,
         "bc3" => Format::Bc3,
@@ -244,7 +246,10 @@ fn wf_list(dir: &Path, family: &str, format: &str, count: usize) -> anyhow::Resu
         let Ok(raw) = head.read(e) else { continue };
         let Ok(h) = TextureHeader::parse(&raw) else { continue };
         let k = h.common.kind;
-        if h.format == Some(want) && k != KIND_ARRAY && k != KIND_CUBEMAP && k != KIND_PROBE {
+        let odd = format == "odd"
+            && h.format.is_some_and(|f| f.is_block_compressed())
+            && (h.width % 4 != 0 || h.height % 4 != 0);
+        if (odd || h.format == Some(want)) && (format != "odd" || odd) && k != KIND_ARRAY && k != KIND_CUBEMAP && k != KIND_PROBE {
             found.push((e.path.clone(), h.width, h.height));
         }
     }

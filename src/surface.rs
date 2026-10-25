@@ -90,14 +90,14 @@ fn run<T: Copy, const N: usize>(
             let texels = decode(block);
             let x0 = bx * 4;
             let cols = (width - x0).min(4);
+            let flat = texels.as_flattened();
             for ty in 0..rows {
                 let at = (y0 + ty) * dst_pitch + x0 * 4;
                 let Some(line) = dst.get_mut(at..at + cols * 4) else {
                     return;
                 };
-                for (tx, px) in line.as_chunks_mut::<4>().0.iter_mut().enumerate() {
-                    px.copy_from_slice(&texels[ty * 4 + tx]);
-                }
+                // Blocks inside the image copy a whole row of four texels at once
+                line.copy_from_slice(&flat[ty * 16..ty * 16 + cols * 4]);
             }
         }
     }

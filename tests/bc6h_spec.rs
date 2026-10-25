@@ -590,3 +590,19 @@ fn rgba8_convenience_clamps_and_truncates() {
     assert_eq!(bc6h::half_to_unorm8(0x7C00), 255);
     assert_eq!(bc6h::half_to_unorm8(0x0000), 0);
 }
+
+#[test]
+fn half_to_unorm8_equals_the_float_definition_for_every_bit_pattern() {
+    // floor(clamp(x, 0, 1) * 255) with x the half converted to f32 (the product is exact in f32)
+    for h in 0..=u16::MAX {
+        let x = bc6h::half_to_f32(h);
+        let expect = if x.is_nan() || x <= 0.0 {
+            0
+        } else if x >= 1.0 {
+            255
+        } else {
+            (x * 255.0) as u8
+        };
+        assert_eq!(bc6h::half_to_unorm8(h), expect, "{h:#06x}");
+    }
+}

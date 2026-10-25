@@ -296,14 +296,22 @@ pub fn decode_block_f32(block: &[u8; 16], signed: bool) -> [[f32; 4]; 16] {
 /// dependency) does, so that existing images do not change. Use the half or `f32` output for
 /// anything that needs the HDR range or round-to-nearest.
 pub fn half_to_unorm8(h: u16) -> u8 {
-    let f = half_to_f32(h);
-    // NaN compares false with everything, so it falls through to 0
-    if f >= 1.0 {
-        255
-    } else if f > 0.0 {
-        (f * 255.0) as u8
+    if h >= 0x7C00 {
+        // +infinity clamps to 1; NaN (0x7C01..=0x7FFF) and everything with the sign bit set give 0
+        return if h == 0x7C00 { 255 } else { 0 };
+    }
+    if h >= 0x3C00 {
+        return 255; // 1.0 and above
+    }
+    let exp = (h >> 10) as u32;
+    let man = (h & 0x3FF) as u32;
+    // value = (1024 + man) * 2^(exp - 25) for a normal number, man * 2^-24 for a subnormal one;
+    // times 255 and rounded down (the product has at most 19 significant bits, so a float
+    // multiplication would give the same result)
+    if exp == 0 {
+        ((man * 255) >> 24) as u8
     } else {
-        0
+        (((1024 + man) * 255) >> (25 - exp)) as u8
     }
 }
 

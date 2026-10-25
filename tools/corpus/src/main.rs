@@ -223,6 +223,79 @@ fn wt(dir: &Path, sink: &mut Sink, limit: usize) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Lists `count` 2D textures of one format, spread over the package.
+fn wf_list(dir: &Path, family: &str, format: &str, count: usize) -> anyhow::Result<()> {
+    use wf_unpack::cache::Package;
+    use wf_unpack::texture::{Format, TextureHeader, KIND_ARRAY, KIND_CUBEMAP, KIND_PROBE};
+    let want = match format {
+        "bc1" => Format::Bc1,
+        "bc2" => Format::Bc2,
+        "bc3" => Format::Bc3,
+        "bc4" => Format::Bc4,
+        "bc5" => Format::Bc5,
+        "bc6h" => Format::Bc6h,
+        "bc7" => Format::Bc7,
+        _ => anyhow::bail!("unknown format"),
+    };
+    let mut head = Package::open_in(dir, &format!("H.{family}"))?.ok_or_else(|| anyhow::anyhow!("no package"))?;
+    let entries = head.toc.entries.clone();
+    let mut found = Vec::new();
+    for e in &entries {
+        let Ok(raw) = head.read(e) else { continue };
+        let Ok(h) = TextureHeader::parse(&raw) else { continue };
+        let k = h.common.kind;
+        if h.format == Some(want) && k != KIND_ARRAY && k != KIND_CUBEMAP && k != KIND_PROBE {
+            found.push((e.path.clone(), h.width, h.height));
+        }
+    }
+    for i in 0..count.min(found.len()) {
+        let (p, w, h) = &found[i * found.len() / count.min(found.len())];
+        println!("{p}\t{w}x{h}");
+    }
+    Ok(())
+}
+
+/// Decodes the top mip level the way wf-unpack did before switching to bcn-decode (texture2ddecoder
+/// on the surface padded to whole blocks) and writes it as PNG, with the same encoder settings as
+/// `Texture::to_png`.
+fn wf_old_png(dir: &Path, family: &str, path: &str, out: &Path) -> anyhow::Result<()> {
+    use wf_unpack::texture::{Format, TexturePackages};
+    let tex = TexturePackages::open_family(dir, family)?.load(path)?;
+    let (w, h) = (tex.width as usize, tex.height as usize);
+    let top = &tex.mips[0];
+    type Decoder = fn(&[u8], usize, usize, &mut [u32]) -> Result<(), &'static str>;
+    let decoder: Decoder = match tex.format {
+        Format::Bc1 => texture2ddecoder::decode_bc1,
+        Format::Bc2 => texture2ddecoder::decode_bc2,
+        Format::Bc3 => texture2ddecoder::decode_bc3,
+        Format::Bc4 => texture2ddecoder::decode_bc4,
+        Format::Bc5 => texture2ddecoder::decode_bc5,
+        Format::Bc6h => texture2ddecoder::decode_bc6_unsigned,
+        Format::Bc7 => texture2ddecoder::decode_bc7,
+        _ => anyhow::bail!("not block compressed"),
+    };
+    let (bw, bh) = (w.div_ceil(4) * 4, h.div_ceil(4) * 4);
+    let mut pixels = vec![0u32; bw * bh];
+    decoder(top, bw, bh, &mut pixels).map_err(|e| anyhow::anyhow!("{e}"))?;
+    let mut rgba = Vec::with_capacity(w * h * 4);
+    for row in pixels.chunks_exact(bw).take(h) {
+        for p in &row[..w] {
+            let [b, g, r, a] = p.to_le_bytes();
+            if tex.format == Format::Bc4 {
+                rgba.extend_from_slice(&[r, r, r, 255]);
+            } else {
+                rgba.extend_from_slice(&[r, g, b, a]);
+            }
+        }
+    }
+    let file = std::io::BufWriter::new(fs::File::create(out)?);
+    let mut enc = png::Encoder::new(file, w as u32, h as u32);
+    enc.set_color(png::ColorType::Rgba);
+    enc.set_depth(png::BitDepth::Eight);
+    enc.write_header()?.write_image_data(&rgba)?;
+    Ok(())
+}
+
 fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let flag = |name: &str| args.iter().position(|a| a == name).and_then(|i| args.get(i + 1)).cloned();
@@ -233,6 +306,14 @@ fn main() -> anyhow::Result<()> {
         fs::create_dir_all(d)?;
     }
     let game = args.get(1).map(String::as_str).unwrap_or("");
+    if game == "wf-list" {
+        // wf-list <dir> <family> <format> <count>
+        return wf_list(Path::new(&args[2]), &args[3], &args[4], args[5].parse()?);
+    }
+    if game == "wf-old-png" {
+        // wf-old-png <dir> <family> <path> <out.png>
+        return wf_old_png(Path::new(&args[2]), &args[3], &args[4], Path::new(&args[5]));
+    }
     let path = PathBuf::from(args.get(2).cloned().unwrap_or_default());
     let mut sink = Sink {
         dir,

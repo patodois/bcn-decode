@@ -1,0 +1,20 @@
+[package]
+name = "bcn-decode"
+version = "0.1.0"
+edition = "2021"
+description = "Block-compression texture decoder: BC1, BC2, BC3, BC4, BC5, BC6H and BC7, written from the public specifications"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/patodois/bcn-decode"
+keywords = ["texture", "dds", "bc7", "bc6h", "decoder"]
+categories = ["graphics", "multimedia::images", "no-std"]
+exclude = ["/oracle", "/corpus", "/tools"]
+
+[features]
+default = ["std"]
+# Implements std::error::Error for Error. Without it the crate is no_std (plus alloc).
+std = []
+
+[dependencies]
+
+[profile.release]
+debug = false

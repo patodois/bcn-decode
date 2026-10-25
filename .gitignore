@@ -1,0 +1,13 @@
+/target
+/target-tools
+/Cargo.lock
+/oracle/target
+/tools/corpus/target
+# local only: game content and raw scan output (they quote game blocks)
+/corpus
+/results
+*.bcn
+# local cross-check against wf-unpack's own bc6h.rs and one-off probes
+/oracle/src/bin/wfcross.rs
+/oracle/src/bin/probe*.rs
+/tools/corpus/Cargo.lock

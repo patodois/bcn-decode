@@ -1,0 +1,18 @@
+[package]
+name = "bcn-oracle"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Test oracle for bcn-decode: runs texture2ddecoder as a black box. Not part of the crate."
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+texture2ddecoder = "0.1.2"
+bcn-decode = { path = ".." }
+anyhow = "1"   # only for the local cross-check against wf-unpack's bc6h.rs
+
+# Its own workspace, so that texture2ddecoder never shows up in the lock file of the crate.
+[workspace]
+
+[profile.release]
+debug = false

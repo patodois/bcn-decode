@@ -1,0 +1,22 @@
+[package]
+name = "bcn-corpus"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Local tool: walks the block-compressed textures of local Warframe and War Thunder installs, compares bcn-decode with texture2ddecoder and optionally stores a sample. Needs sibling checkouts (see the path dependencies)."
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+bcn-oracle = { path = "../../oracle" }
+bcn-decode = { path = "../.." }
+# Sibling checkouts of our own readers: Warframe's cache packages and War Thunder's DDSx packs
+wf-unpack = { path = "../../../wf-unpack-integrate" }
+wt_blk = { path = "../../../wt-contrib/wt_blk", default-features = false }
+memmap2 = "0.9"
+libc = "0.2"
+anyhow = "1"
+
+[workspace]
+
+[profile.release]
+debug = false

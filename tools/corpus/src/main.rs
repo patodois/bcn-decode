@@ -4,6 +4,7 @@
 //!
 //!   bcn-corpus wf <Cache.Windows> [--store DIR --every N] [--limit N]
 //!   bcn-corpus wt <game dir>      [--store DIR --every N] [--limit N]
+//!   bcn-corpus noc <game dir>     [--store DIR --every N] [--limit N]   (needs ../nocturne-unpack)
 //!
 //! Memory: one texture at a time (Warframe) or one memory-mapped pack plus one texture (War Thunder).
 
@@ -223,6 +224,62 @@ fn wt(dir: &Path, sink: &mut Sink, limit: usize) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Nocturne (Unity bundles): every Texture2D of the install in DXT1, DXT5 or BC7.
+fn noc(dir: &Path, sink: &mut Sink, limit: usize) -> anyhow::Result<()> {
+    use nocturne_unpack::bundle::{class, Bundle};
+    use nocturne_unpack::install::Install;
+    use nocturne_unpack::unity::Texture2D;
+    let t0 = Instant::now();
+    let install = Install::open(dir)?;
+    let mut tot = Totals::new();
+    let bundles: Vec<PathBuf> = install.base_bundles().into_iter().chain(install.dlc_bundles()).collect();
+    for (bi, p) in bundles.iter().enumerate() {
+        if limit > 0 && bi >= limit {
+            break;
+        }
+        let Ok(b) = Bundle::open(p) else {
+            *tot.skipped.entry("unreadable bundle".into()).or_default() += 1;
+            continue;
+        };
+        for id in b.objects_of(class::TEXTURE_2D) {
+            let Ok(t) = b.read::<Texture2D>(id) else { continue };
+            let (fmts, key): (Vec<Fmt>, Fmt) = match t.m_TextureFormat {
+                10 => (vec![Fmt::Bc1, Fmt::Bc1a], Fmt::Bc1),
+                12 => (vec![Fmt::Bc3], Fmt::Bc3),
+                25 => (vec![Fmt::Bc7], Fmt::Bc7),
+                f => {
+                    *tot.skipped.entry(format!("Unity texture format {f}")).or_default() += 1;
+                    continue;
+                }
+            };
+            let streamed;
+            let data: &[u8] = if t.image_data.is_empty() && t.m_StreamData.size > 0 {
+                match b.read_stream(&t.m_StreamData) {
+                    Ok(d) => {
+                        streamed = d;
+                        &streamed
+                    }
+                    Err(_) => {
+                        *tot.skipped.entry("unreadable stream".into()).or_default() += 1;
+                        continue;
+                    }
+                }
+            } else {
+                &t.image_data
+            };
+            *tot.textures.entry(key).or_default() += 1;
+            let bb = fmts[0].block_bytes();
+            let data = &data[..data.len() / bb * bb];
+            tot.add(&fmts, data, key);
+            if sink.wants(&t.m_Name) {
+                sink.store(key, data);
+            }
+        }
+    }
+    tot.print("Nocturne", t0.elapsed().as_secs_f64());
+    Ok(())
+}
+
 /// Lists `count` 2D textures of one format, spread over the package.
 fn wf_list(dir: &Path, family: &str, format: &str, count: usize) -> anyhow::Result<()> {
     use wf_unpack::cache::Package;
@@ -323,11 +380,16 @@ fn main() -> anyhow::Result<()> {
     let mut sink = Sink {
         dir,
         every,
-        game: if game == "wf" { "wf" } else { "wt" },
+        game: match game {
+            "wf" => "wf",
+            "noc" => "noc",
+            _ => "wt",
+        },
         files: BTreeMap::new(),
         stored: BTreeMap::new(),
     };
     match game {
+        "noc" => noc(&path, &mut sink, limit)?,
         "wf" => wf(&path, &mut sink, limit)?,
         "wt" => wt(&path, &mut sink, limit)?,
         _ => eprintln!("usage: bcn-corpus wf|wt <dir> [--store DIR --every N] [--limit N]"),

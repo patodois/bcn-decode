@@ -11,6 +11,7 @@ bcn-oracle = { path = "../../oracle" }
 bcn-decode = { path = "../.." }
 # Sibling checkouts of our own readers: Warframe's cache packages and War Thunder's DDSx packs
 wf-unpack = { path = "../../../wf-unpack-integrate" }
+nocturne-unpack = { path = "../../../nocturne-unpack", default-features = false }
 wt_blk = { path = "../../../wt-contrib/wt_blk", default-features = false }
 memmap2 = "0.9"
 libc = "0.2"

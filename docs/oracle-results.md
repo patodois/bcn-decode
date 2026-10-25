@@ -4,15 +4,21 @@
 output block by block. The run of 25 October 2026 on local installs (Warframe, Steam build of
 22 October 2026; War Thunder 2.59 for macOS), without keeping any data:
 
-| Format | Warframe blocks | identical | War Thunder blocks | identical |
-|---|---:|---:|---:|---:|
-| BC1 (opaque, and with 1-bit alpha) | 2,650,278,296 | 100% | 2,674,826,412 | 100% |
-| BC3 | 3,331,610,806 | 99.075% | 4,429,985,290 | 100% |
-| BC4 | 292,371,345 | 100% | 82,015,617 | 100% |
-| BC5 | 1,330,253,494 | 100% | 70,091,242 | 100% |
-| BC6H UF16 | 194,248,613 | 99.848% | none in the game | |
-| BC7 | 184,988,873 | 100% | 867,006,177 | 100% |
-| BC2 | none in either game (random blocks only) | | | |
+| Format | Warframe blocks | identical | War Thunder blocks | identical | Nocturne blocks | identical |
+|---|---:|---:|---:|---:|---:|---:|
+| BC1 (opaque, and with 1-bit alpha) | 2,650,278,296 | 100% | 2,674,826,412 | 100% | 122,027,785 | 100% |
+| BC3 | 3,331,610,806 | 99.075% | 4,429,985,290 | 100% | 70,782,642 | 100% |
+| BC4 | 292,371,345 | 100% | 82,015,617 | 100% | none | |
+| BC5 | 1,330,253,494 | 100% | 70,091,242 | 100% | none | |
+| BC6H UF16 | 194,248,613 | 99.848% | none in the game | | none | |
+| BC7 | 184,988,873 | 100% | 867,006,177 | 100% | 5,313,600 | 100% |
+| BC2 | none in the games (random blocks only) | | | | | |
+
+Nocturne is Shin Megami Tensei III Nocturne HD Remaster (Steam, Windows build, Unity 2019.4 bundles):
+every Texture2D of the base game and its DLC bundles (15,930 textures; DXT1 10,742, DXT5 3,455, BC7 41, plus uncompressed
+RGB24, RGBA32 and Alpha8), counted over all mip levels like the other games. In its DXT5 data
+16,440,167 blocks have `color0 <= color1`, and none of them differs: the oracle's three-colour mode only
+shows for colour codes 2 and 3, which those blocks do not use.
 
 Random blocks (50,000 per mode and format, fixed seed): BC1, BC1 with alpha, BC4, BC5 and BC7 are 100%
 identical; BC2 and BC3 differ only for `color0 <= color1`; BC6H differs only in the classes below.
@@ -39,6 +45,16 @@ The rest of BC6H is identical: all 186,701,759 Warframe blocks without any of th
 and so do all random SF16 blocks without case 2 or 4 (413,984 of 700,000). The Warframe numbers are for UF16,
 the only BC6H variant in the game; SF16 is checked with random blocks, the table-driven reference in
 `tests/bc6h_spec.rs`, and wf-unpack's own `bc6h.rs` (no difference on 2,000,000 random blocks of each).
+
+## Nocturne, old versus new, pixel by pixel
+
+nocturne-unpack on its `main` branch (texture2ddecoder) and on its `bcn` branch (bcn-decode), on the
+installed game: all 15,930 Texture2D (3.75 billion pixels, every format the game uses) decode to the
+same RGBA pixels with both, 0 differences, peak RSS 1 GB. `check`, `check --kind fields`, `census
+--decode`, `check-bridge --kind demons --textures`, `check-bridge --kind fields`, and
+`check-conformance` (`--kind character --compare-load` and `--kind level`) print the same results on both
+branches (only timings and the name of the bundle that reached the peak memory differ), and the game-data
+tests pass on both (49 unit tests on `bcn`, 48 on `main`: one test was added).
 
 ## 8-bit conventions
 

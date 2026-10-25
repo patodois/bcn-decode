@@ -11,3 +11,4 @@
 /oracle/src/bin/wfcross.rs
 /oracle/src/bin/probe*.rs
 /tools/corpus/Cargo.lock
+/tools/noc-pixels

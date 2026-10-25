@@ -56,6 +56,12 @@ same RGBA pixels with both, 0 differences, peak RSS 1 GB. `check`, `check --kind
 branches (only timings and the name of the bundle that reached the peak memory differ), and the game-data
 tests pass on both (49 unit tests on `bcn`, 48 on `main`: one test was added).
 
+## Signed BC6H, negative zero
+
+An interpolated value of -1 scales to a magnitude of 0. Microsoft's `finish_unquantize` then gives +0 (0x0000),
+the DFS 20.2 text gives -0 (0x8000). The crate follows Direct3D. The 8-bit output and every comparison above
+are unaffected (both zeros clamp to 0).
+
 ## 8-bit conventions
 
 BC1 to BC5 have no bit-exact 8-bit definition in the specifications. This crate uses the convention of the

@@ -1,5 +1,5 @@
 /target
-/target-tools
+/target-*
 /Cargo.lock
 /oracle/target
 /tools/corpus/target

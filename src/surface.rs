@@ -198,12 +198,10 @@ pub fn decode_rgba8_to_vec(
         .div_ceil(4)
         .checked_mul(format.block_bytes())
         .ok_or(Error::SizeOverflow)?;
-    let len = width
-        .checked_mul(height)
-        .and_then(|n| n.checked_mul(4))
-        .ok_or(Error::SizeOverflow)?;
+    let row = width.checked_mul(4).ok_or(Error::SizeOverflow)?;
+    let len = row.checked_mul(height).ok_or(Error::SizeOverflow)?;
     // Validate the source before allocating, so that a huge size cannot make us allocate
-    check(format, src.len(), src_pitch, width, height, len, width * 4)?;
+    check(format, src.len(), src_pitch, width, height, len, row)?;
     let mut out = alloc::vec![0u8; len];
     decode_rgba8(format, src, width, height, &mut out)?;
     Ok(out)
@@ -289,11 +287,9 @@ pub fn decode_rgba_f32_to_vec(
         .div_ceil(4)
         .checked_mul(format.block_bytes())
         .ok_or(Error::SizeOverflow)?;
-    let len = width
-        .checked_mul(height)
-        .and_then(|n| n.checked_mul(4))
-        .ok_or(Error::SizeOverflow)?;
-    check(format, src.len(), src_pitch, width, height, len, width * 4)?;
+    let row = width.checked_mul(4).ok_or(Error::SizeOverflow)?;
+    let len = row.checked_mul(height).ok_or(Error::SizeOverflow)?;
+    check(format, src.len(), src_pitch, width, height, len, row)?;
     let mut out = alloc::vec![0f32; len];
     decode_rgba_f32(format, src, width, height, &mut out)?;
     Ok(out)

@@ -216,6 +216,11 @@ fn buffer_errors_are_reported_before_anything_is_written() {
     );
     // the Display text exists
     assert!(Error::SizeOverflow.to_string().contains("overflow"));
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn the_error_type_implements_std_error() {
     let e: &dyn std::error::Error = &Error::UnsupportedOutput;
     assert!(!e.to_string().is_empty());
 }
@@ -382,4 +387,31 @@ fn format_specific_output_conventions() {
     let blk = [(-127i8) as u8, 127, 0, 0, 0, 0, 0, 0];
     decode_rgba_f32(Format::Bc4Snorm, &blk, 4, 4, &mut f).unwrap();
     assert_eq!(f[..4], [-1.0, 0.0, 0.0, 1.0]);
+}
+
+#[test]
+fn widths_whose_row_overflows_are_errors_even_with_zero_height() {
+    // width * 4 overflows for width >= 2^62: the to_vec helpers used to multiply unchecked when the
+    // height was 0 (a panic with overflow checks on)
+    for &format in &ALL {
+        for width in [1usize << 62, (1 << 62) + 1, usize::MAX / 2, usize::MAX] {
+            for height in [0usize, 1] {
+                assert_eq!(
+                    decode_rgba8_to_vec(format, &[], width, 0),
+                    Err(Error::SizeOverflow),
+                    "{format:?} {width}"
+                );
+                assert!(decode_rgba8_to_vec(format, &[], width, height).is_err());
+                assert!(
+                    decode_rgba_f32_to_vec(format, &[], width, 0).is_err(),
+                    "{format:?} {width}"
+                );
+                assert!(decode_rgba_f32_to_vec(format, &[], width, height).is_err());
+                let mut out = [0u8; 4];
+                assert!(decode_rgba8(format, &[], width, 0, &mut out).is_err());
+            }
+        }
+        // a wide but representable row: nothing overflows: zero height decodes nothing
+        assert_eq!(decode_rgba8_to_vec(format, &[], 1 << 50, 0), Ok(Vec::new()));
+    }
 }

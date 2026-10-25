@@ -116,6 +116,7 @@ pub fn decode_bc3_block(block: &[u8; 16]) -> [[u8; 4]; 16] {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec::Vec;
 
     /// Texel codes 0, 1, 2, 3 repeated on every row: bits = 0b11_10_01_00 per row.
     const ROW_CODES: [u8; 4] = [0xE4, 0xE4, 0xE4, 0xE4];

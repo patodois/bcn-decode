@@ -160,13 +160,23 @@ fn unquantize(x: i64, signed: bool, epb: u32) -> i64 {
     }
 }
 
+/// Microsoft's `finish_unquantize` (BC6H Format): the magnitude is scaled, then the sign is applied
+/// if the scaled value is negative. (DFS 20.2 tests the sign of the unscaled value, which differs
+/// only for -1: negative zero there.)
 fn finish(i: i64, signed: bool) -> u16 {
     if !signed {
         ((i * 31) >> 6) as u16
-    } else if i < 0 {
-        ((((-i) * 31) >> 5) | 0x8000) as u16
     } else {
-        ((i * 31) >> 5) as u16
+        let scaled = if i < 0 {
+            -(((-i) * 31) >> 5)
+        } else {
+            (i * 31) >> 5
+        };
+        if scaled < 0 {
+            (0x8000 | -scaled) as u16
+        } else {
+            scaled as u16
+        }
     }
 }
 
@@ -605,4 +615,30 @@ fn half_to_unorm8_equals_the_float_definition_for_every_bit_pattern() {
         };
         assert_eq!(bc6h::half_to_unorm8(h), expect, "{h:#06x}");
     }
+}
+
+#[test]
+fn signed_minus_one_scales_to_positive_zero_like_direct3d() {
+    // Mode 15 (16-bit endpoints, no unquantizing) with R0 = 0xFFFF = -1 and zero deltas: every
+    // texel interpolates to -1, ((-1 * (64 - w) - w + 32) >> 6) = -1. Microsoft's finish_unquantize
+    // scales the magnitude, (1 * 31) >> 5 = 0, and only then looks at the sign: +0.0 (0x0000). The
+    // DFS 20.2 text would give 0x8000 (-0.0); the choice follows Direct3D (see `bc6h::finish`).
+    let v = build(
+        15,
+        [[0xFFFF, 0, 0, 0], [0xFFFF, 0, 0, 0], [0xFFFF, 0, 0, 0]],
+        0,
+    );
+    let b = v.to_le_bytes();
+    assert_eq!(
+        bc6h::parse_block(&b, true).unwrap().endpoints[0],
+        [-1, -1, -1]
+    );
+    let out = bc6h::decode_block_half(&b, true);
+    assert!(out.iter().all(|p| *p == [0, 0, 0]), "{out:?}");
+    let f = bc6h::decode_block_f32(&b, true);
+    assert!(f.iter().all(|t| t[0].is_sign_positive() && t[0] == 0.0));
+    // -2 scales to (2 * 31) >> 5 = 1: the smallest negative subnormal 0x8001
+    let v = build(15, [[0xFFFE, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], 0);
+    let out = bc6h::decode_block_half(&v.to_le_bytes(), true);
+    assert_eq!(out[0][0], 0x8001);
 }

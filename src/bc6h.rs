@@ -106,21 +106,33 @@ fn unquantize(x: i32, signed: bool, bits: u32) -> i32 {
     }
 }
 
-/// Maps an interpolated value to the half-float bit pattern (DFS 20.2, last step).
+/// Maps an interpolated value to the half-float bit pattern (the last step of the pseudocode).
+///
+/// For the signed format the magnitude is scaled by 31/32 first and the sign is applied after
+/// that, as in `finish_unquantize` of Microsoft's "BC6H Format" (D3D11 BC6H: "scale the magnitude
+/// by 31/32", then `if (comp < 0)` sets the sign bit). The DFS 20.2 text sets the sign from the
+/// interpolated value instead (`i < 0 ? (((-i) * 31) >> 5) | 0x8000`), which differs only for
+/// `i == -1`: the scaled magnitude is 0 and DFS gives negative zero (0x8000) where Direct3D gives
+/// positive zero (0x0000). Direct3D requires hardware to be bit-exact with its functions ("All
+/// hardware decompressors are required to return bit-accurate results"), so this follows Direct3D.
 #[inline]
 fn finish(i: i32, signed: bool) -> u16 {
     if !signed {
         // i is in 0..=0xFFFF here; scaling by 31/64 limits the result to 0x7BFF (65504.0)
         ((i as u32 * 31) >> 6) as u16
-    } else if i < 0 {
-        ((((-i) as u32 * 31) >> 5) as u16) | 0x8000
     } else {
-        ((i as u32 * 31) >> 5) as u16
+        let magnitude = ((i.unsigned_abs() * 31) >> 5) as u16;
+        if i < 0 && magnitude != 0 {
+            magnitude | 0x8000
+        } else {
+            magnitude
+        }
     }
 }
 
 /// What the header of a BC6H block holds, before unquantizing and interpolating.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct BlockInfo {
     /// The mode number (0 to 18, the values of DFS Table 121).
     pub mode: u8,

@@ -3,9 +3,16 @@
 A decoder for block-compressed textures: BC1, BC2, BC3, BC4, BC5, BC6H and BC7 (the formats of
 DDS files, Direct3D 10 and 11, and `GL_EXT_texture_compression_s3tc`, `_rgtc` and `_bptc`).
 
-It is written from the public specifications only (Microsoft's Direct3D block compression
+It is implemented from the public specifications (Microsoft's Direct3D block compression
 documentation and the Khronos Data Format Specification), with the section of the specification
-named in a comment next to each rule. No code of other decoders was read. It has no
+named in a comment next to each rule. Provenance, exactly: the source code of `texture2ddecoder`,
+bcdec, DirectXTex and other decoders was not read. Part of wf-unpack's `bc6h.rs` was read (its mode
+table, its unquantizing helpers and its notes on two `texture2ddecoder` bugs; that file was derived from
+`texture2ddecoder` and bcdec) before the BC6H decoder was written, and it served as a cross-check
+afterwards (the two agree on millions of blocks). `texture2ddecoder` was only used as a black box:
+its outputs were compared with ours, and its function signatures were read from its generated
+documentation. The causes given below for its differences come from those comparisons and from the
+specifications. It has no
 dependencies, no `unsafe` (`#![forbid(unsafe_code)]`), is `no_std` + `alloc` with the `std` feature off,
 and does not panic on malformed input: every bit pattern of a block decodes to something, and only
 buffers that are too small are errors.
@@ -37,6 +44,11 @@ let rgba = decode_rgba8_to_vec(Format::Bc7, &blocks, width, height)?; // width *
 * `bc6h::parse_block` returns the mode, partition and endpoints of a BC6H block.
 
 ## Where the specifications leave a choice
+
+* **Signed BC6H, interpolated -1.** The DFS 20.2 text sets the sign bit from the unscaled value, which
+  makes -1 negative zero (0x8000); Microsoft's `finish_unquantize` scales the magnitude first and sets the sign
+  only if the scaled value is negative, giving +0 (0x0000). Direct3D requires bit-exact hardware, so this
+  crate follows Direct3D.
 
 * **BC1 to BC5, 8-bit output.** The specifications define real values such as
   `(2 * RGB0 + RGB1) / 3` and leave the conversion to 8 bits to the implementation (Direct3D only

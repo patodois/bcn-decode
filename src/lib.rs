@@ -1,9 +1,13 @@
 //! Block-compression texture decoder for BC1, BC2, BC3, BC4, BC5, BC6H and BC7.
 //!
-//! Written from the public specifications only: Microsoft's Direct3D 10 and 11 block compression
+//! Implemented from the public specifications: Microsoft's Direct3D 10 and 11 block compression
 //! documentation and the Khronos Data Format Specification 1.3.1 (sections 18 S3TC, 19 RGTC, 20
-//! BPTC). Every rule says in a comment which section it comes from. No code of other decoders
-//! was read.
+//! BPTC). Every rule says in a comment which section it comes from. Provenance: the source of
+//! `texture2ddecoder`, bcdec, DirectXTex and other decoders was not read. Part of wf-unpack's
+//! `bc6h.rs` (its mode table, its unquantizing helpers and its notes on two `texture2ddecoder`
+//! bugs; that file derived from `texture2ddecoder` and bcdec) was read first and later served as a
+//! cross-check. `texture2ddecoder` was run as a black box (outputs only, plus the signatures in
+//! its generated documentation) to compare results; see `docs/oracle-results.md`.
 //!
 //! * [`decode_rgba8`] decodes a whole surface to 8-bit RGBA; [`decode_rgba_f32`] to `f32`
 //!   (BC6H keeps its full half-float range there); [`decode_bc6h_rgba_f16`] gives the raw

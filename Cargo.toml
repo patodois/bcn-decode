@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/patodois/bcn-decode"
 keywords = ["texture", "dds", "bc7", "bc6h", "decoder"]
 categories = ["graphics", "multimedia::images", "no-std"]
-exclude = ["/oracle", "/corpus", "/tools", "/results", "/target*"]
+exclude = ["/oracle", "/corpus", "/tools", "/results", "/fuzz", "/target*"]
 
 [features]
 default = ["std"]

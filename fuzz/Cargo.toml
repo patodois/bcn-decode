@@ -1,0 +1,69 @@
+[package]
+name = "bcn-decode-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2021"
+
+# cargo-fuzz / libFuzzer harnesses. Nightly only; kept out of the stable build and CI on purpose
+# (this package has its own empty workspace, so `cargo build` at the repository root ignores it).
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+arbitrary = { version = "1", features = ["derive"] }
+bcn-decode = { path = ".." }
+
+[workspace]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(fuzzing)'] }
+
+[[bin]]
+name = "surface_rgba8"
+path = "fuzz_targets/surface_rgba8.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "surface_f32"
+path = "fuzz_targets/surface_f32.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "surface_bc6h_f16"
+path = "fuzz_targets/surface_bc6h_f16.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "block_s3tc"
+path = "fuzz_targets/block_s3tc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "block_rgtc"
+path = "fuzz_targets/block_rgtc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "block_bc6h"
+path = "fuzz_targets/block_bc6h.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "block_bc7"
+path = "fuzz_targets/block_bc7.rs"
+test = false
+doc = false
+bench = false

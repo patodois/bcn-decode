@@ -55,8 +55,8 @@ Similarly `decode_rgba8(width = usize::MAX/2, height = 0)` returns `SizeOverflow
 is empty; harmless, not changed.
 
 ## Left out / uncertain
-* Branch name: the task asks for `cloud/fuzz-bcn-decode`; this session was set up to push only
-  `claude/fuzz-bcn-decode-1yc90l`, so that is the branch used. Rename/cherry-pick as you prefer.
+* Branch name: the task asked for `cloud/fuzz-bcn-decode`; the owner confirmed from the local session that
+  `claude/fuzz-bcn-decode-1yc90l` (the only branch this session may push) replaces it.
 * 30 minutes per target is the minimum asked; since nothing was found I did not go longer. The surface
   targets run at only ~2-3k exec/s (they build buffers), so they have had far fewer executions than the
   block targets. A longer run of those is the most useful follow-up.

@@ -1,7 +1,6 @@
 # bcn-decode
 
-A decoder for block-compressed textures: BC1, BC2, BC3, BC4, BC5, BC6H and BC7 (the formats of
-DDS files, Direct3D 10 and 11, and `GL_EXT_texture_compression_s3tc`, `_rgtc` and `_bptc`).
+bcn-decode decodes BC1, BC2, BC3, BC4, BC5, BC6H and BC7 block-compressed textures for Rust graphics and game developers.
 
 It is implemented from the public specifications (Microsoft's Direct3D block compression
 documentation and the Khronos Data Format Specification), with the section of the specification

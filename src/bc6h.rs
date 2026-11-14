@@ -134,7 +134,8 @@ fn finish(i: i32, signed: bool) -> u16 {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct BlockInfo {
-    /// The mode number (0 to 18, the values of DFS Table 121).
+    /// The mode number as stored in the block header: one of the fourteen values
+    /// of DFS Table 121 (0, 1, 2, 3, 6, 7, 10, 11, 14, 15, 18, 22, 26 or 30).
     pub mode: u8,
     /// Bits per endpoint channel (EPB in the DFS pseudocode).
     pub endpoint_bits: u32,

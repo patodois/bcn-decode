@@ -34,6 +34,10 @@ let rgba = decode_rgba8_to_vec(Format::Bc7, &blocks, width, height)?; // width *
 | BC6H | `Bc6hUf16`, `Bc6hSf16` | clamped to [0, 1] | the half-float values, alpha 1.0 |
 | BC7 | `Bc7` | RGBA | RGBA / 255 |
 
+Reading a DDS file or a Direct3D `BC1` texture? Use `Bc1Alpha`: Direct3D samples the
+three-colour mode's fourth code as transparent black. `Bc1` is the opaque variant of
+`GL_EXT_texture_compression_s3tc` (`COMPRESSED_RGB_S3TC_DXT1`), which returns alpha 255 there.
+
 * `decode_rgba8`, `decode_rgba_f32` and `decode_bc6h_rgba_f16` (raw half-float bits) decode a
   whole surface into a slice; the `_pitched` variants take the byte pitch of the source rows of
   blocks and the pitch of the destination rows; the `_to_vec` variants allocate.

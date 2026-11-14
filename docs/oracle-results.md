@@ -81,3 +81,9 @@ RGBA8 for both, `texture2ddecoder` writes `u32`. Real blocks from the local corp
 | BC5 | 530 | 570 to 600 | 0.9 |
 | BC6H UF16 | 107 | 92 | 1.2 |
 | BC7 | 136 to 146 | 68 to 76 | 2.0 |
+
+## What this comparison does not cover
+
+The oracle compares clamped 8-bit output only. The signed BC4 and BC5 formats
+(`Bc4Snorm`, `Bc5Snorm`), the `f32` outputs and BC6H values above 1.0 have no
+external comparison; they rest on the specification-driven tests in `tests/`.

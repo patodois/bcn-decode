@@ -35,6 +35,8 @@ RUSTDOCFLAGS="-D warnings" cargo doc --no-deps
 - Preserve `#![forbid(unsafe_code)]`, dependency-free decoding and malformed-input handling.
 - The README records the BC6H provenance, including the earlier `wf-unpack` cross-check.
 - `texture2ddecoder` is a separate black-box oracle, not a library dependency.
+- `tests/table_invariants.rs` pins a digest of the generated tables. Regenerating them must not
+  change it unless the specification changed; say why in the commit if it does.
 - The local corpus tool reads installed games without retaining their texture data.
 
 ## Public files
